@@ -28,72 +28,62 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
       // /healthcheck.html にアクセスしたら200を返すよう設定したAMIを作成して指定してください。
       'us-east-1': 'ami-081b9f3fb29eed16e'
     };
-
-    const productsInstanceGroup = new AutoScalingGroup(this, 'ProductsInstanceGroup', {
-      vpc,
-      autoScalingGroupName: 'asg-prodcuts',
-      minCapacity: 1,
-      maxCapacity: 1,
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      machineImage: MachineImage.genericLinux(amiMap),
-    });
-    const customersInstanceGroup = new AutoScalingGroup(this, 'CustomersInstanceGroup', {
-      vpc,
-      autoScalingGroupName: 'asg-customers',
-      minCapacity: 1,
-      maxCapacity: 1,
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      machineImage: MachineImage.genericLinux(amiMap),
-    });
-    const othersInstanceGroup = new AutoScalingGroup(this, 'OthersInstanceGroup', {
-      vpc,
-      autoScalingGroupName: 'asg-others',
-      minCapacity: 1,
-      maxCapacity: 1,
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      machineImage: MachineImage.genericLinux(amiMap),
-    });
-
     const alb = new ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc,
       internetFacing: true,
     });
     const listener = alb.addListener('Listener', { port: 80 });
-    listener.addTargets('ProductsInstanceTarget', {
-      targetGroupName: 'tg-products',
-      port: 80,
-      targets: [productsInstanceGroup],
-      conditions: [
-        ListenerCondition.pathPatterns([
-          '/products*'
-        ])
-      ],
-      priority: 1,
-      healthCheck: {
-        path: '/healthcheck.html'
+    const services = [
+      {
+        category: 'Products',
+        path: '/products*',
       },
-    });
-    listener.addTargets('CustomersInstanceTarget', {
-      targetGroupName: 'tg-customers',
-      port: 80,
-      targets: [customersInstanceGroup],
-      conditions: [
-        ListenerCondition.pathPatterns([
-          '/customers*',
-        ])
-      ],
-      priority: 2,
-      healthCheck: {
-        path: '/healthcheck.html'
+      {
+        category: 'Customers',
+        path: '/customers*',
       },
-    });
-    listener.addTargets('OthersInstanceTarget', {
-      targetGroupName: 'tg-others',
-      port: 80,
-      targets: [othersInstanceGroup],
-      healthCheck: {
-        path: '/healthcheck.html'
+      {
+        category: 'Others',
+        path: null,
       },
-    });
+    ];
+
+    for (let index = 0; index < services.length; index++) {
+      const service = services[index];
+      const target = new AutoScalingGroup(this, `${service.category}InstanceGroup`, {
+        vpc,
+        autoScalingGroupName: `asg-${service.category.toLowerCase()}`,
+        minCapacity: 1,
+        maxCapacity: 1,
+        instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
+        machineImage: MachineImage.genericLinux(amiMap),
+      });
+
+      if (service.path != null) {
+        listener.addTargets(`${service.category}InstanceTarget`, {
+          targetGroupName: `tg-${service.category.toLowerCase()}`,
+          port: 80,
+          targets: [target],
+          conditions: [
+            ListenerCondition.pathPatterns([
+              service.path,
+            ])
+          ],
+          priority: index + 1,
+          healthCheck: {
+            path: '/healthcheck.html'
+          },
+        });
+      } else {
+        listener.addTargets(`${service.category}InstanceTarget`, {
+          targetGroupName: `tg-${service.category.toLowerCase()}`,
+          port: 80,
+          targets: [target],
+          healthCheck: {
+            path: '/healthcheck.html'
+          },
+        });
+      }
+    }
   }
 }
