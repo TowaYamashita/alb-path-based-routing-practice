@@ -24,13 +24,18 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
       ],
     });
 
+    const amiMap = {
+      // /healthcheck.html にアクセスしたら200を返すよう設定したAMIを作成して指定してください。
+      'us-east-1': 'ami-081b9f3fb29eed16e'
+    };
+
     const productsInstanceGroup = new AutoScalingGroup(this, 'ProductsInstanceGroup', {
       vpc,
       autoScalingGroupName: 'asg-prodcuts',
       minCapacity: 1,
       maxCapacity: 1,
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      machineImage: MachineImage.latestAmazonLinux2023({}),
+      machineImage: MachineImage.genericLinux(amiMap),
     });
     const customersInstanceGroup = new AutoScalingGroup(this, 'CustomersInstanceGroup', {
       vpc,
@@ -38,7 +43,7 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
       minCapacity: 1,
       maxCapacity: 1,
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      machineImage: MachineImage.latestAmazonLinux2023({}),
+      machineImage: MachineImage.genericLinux(amiMap),
     });
     const othersInstanceGroup = new AutoScalingGroup(this, 'OthersInstanceGroup', {
       vpc,
@@ -46,7 +51,7 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
       minCapacity: 1,
       maxCapacity: 1,
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      machineImage: MachineImage.latestAmazonLinux2023({}),
+      machineImage: MachineImage.genericLinux(amiMap),
     });
 
     const alb = new ApplicationLoadBalancer(this, 'LoadBalancer', {
@@ -64,6 +69,9 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
         ])
       ],
       priority: 1,
+      healthCheck: {
+        path: '/healthcheck.html'
+      },
     });
     listener.addTargets('CustomersInstanceTarget', {
       targetGroupName: 'tg-customers',
@@ -75,11 +83,17 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
         ])
       ],
       priority: 2,
+      healthCheck: {
+        path: '/healthcheck.html'
+      },
     });
     listener.addTargets('OthersInstanceTarget', {
       targetGroupName: 'tg-others',
       port: 80,
       targets: [othersInstanceGroup],
+      healthCheck: {
+        path: '/healthcheck.html'
+      },
     });
   }
 }
