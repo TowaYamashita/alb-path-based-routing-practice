@@ -28,6 +28,7 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
       // /healthcheck.html にアクセスしたら200を返すよう設定したAMIを作成して指定してください。
       'us-east-1': 'ami-081b9f3fb29eed16e'
     };
+    const healthCheckPath = '/healthcheck.html';
     const alb = new ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc,
       internetFacing: true,
@@ -71,7 +72,7 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
           ],
           priority: index + 1,
           healthCheck: {
-            path: '/healthcheck.html'
+            path: healthCheckPath,
           },
         });
       } else {
@@ -80,7 +81,7 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
           port: 80,
           targets: [target],
           healthCheck: {
-            path: '/healthcheck.html'
+            path: healthCheckPath,
           },
         });
       }
