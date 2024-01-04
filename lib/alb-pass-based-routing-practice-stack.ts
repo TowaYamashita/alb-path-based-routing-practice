@@ -1,4 +1,4 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
 import { InstanceClass, InstanceSize, InstanceType, MachineImage, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { ApplicationLoadBalancer, ListenerCondition } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -85,5 +85,9 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
         });
       }
     }
+
+    new CfnOutput(this, 'LoadBalancerDnsName', {
+      value: alb.loadBalancerDnsName,
+    });
   }
 }
