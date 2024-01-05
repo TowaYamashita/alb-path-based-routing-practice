@@ -20,7 +20,7 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const stage = this.node.tryGetContext('stage');
+    const stage : "dev" | "prod" = this.node.tryGetContext('stage');
     const context : StagingProps = this.node.tryGetContext(stage);
 
     const vpc = new Vpc(this, 'Vpc', {
