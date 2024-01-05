@@ -4,9 +4,24 @@ import { InstanceClass, InstanceSize, InstanceType, MachineImage, SubnetType, Vp
 import { ApplicationLoadBalancer, ListenerCondition } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
 
+interface StagingProps {
+  /**
+   * EC2インスタンスを立ち上げる際に使用するゴールデンイメージ
+   * @see [healthCheckPath] にアクセスしたら200を返すよう設定したAMIを使用してください
+   */
+  amiId: string;
+  /**
+   * ロードバランサからEC2インスタンスへヘルスチェックを行うときのアクセス先のパス
+   */
+  healthCheckPath: string;
+}
+
 export class AlbPassBasedRoutingPracticeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
+    const stage = this.node.tryGetContext('stage');
+    const context : StagingProps = this.node.tryGetContext(stage);
 
     const vpc = new Vpc(this, 'Vpc', {
       maxAzs: 2,
@@ -26,13 +41,17 @@ export class AlbPassBasedRoutingPracticeStack extends Stack {
 
     const amiMap = {
       // /healthcheck.html にアクセスしたら200を返すよう設定したAMIを作成して指定してください。
-      'us-east-1': 'ami-081b9f3fb29eed16e'
+      'us-east-1': context.amiId
     };
-    const healthCheckPath = '/healthcheck.html';
+    const healthCheckPath = context.healthCheckPath;
     const alb = new ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc,
       internetFacing: true,
     });
+
+    // TODO: 以下のURLを参考に、ALBの前段にCloudFrontを噛まして、ALBへ直接アクセスすると403を返すように設定する
+    // https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/restrict-access-to-load-balancer.html
+
     const listener = alb.addListener('Listener', { port: 80 });
     const services = [
       {
