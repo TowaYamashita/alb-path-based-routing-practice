@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { AlbPassBasedRoutingPracticeStack } from '../lib/alb-pass-based-routing-practice-stack';
+import { AlbPathBasedRoutingPracticeStack } from '../lib/alb-path-based-routing-practice-stack';
 
 const app = new cdk.App();
-new AlbPassBasedRoutingPracticeStack(app, 'AlbPassBasedRoutingPracticeStack', {
+new AlbPathBasedRoutingPracticeStack(app, 'AlbPathBasedRoutingPracticeStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */

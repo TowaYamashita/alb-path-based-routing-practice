@@ -16,7 +16,7 @@ interface StagingProps {
   healthCheckPath: string;
 }
 
-export class AlbPassBasedRoutingPracticeStack extends Stack {
+export class AlbPathBasedRoutingPracticeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 

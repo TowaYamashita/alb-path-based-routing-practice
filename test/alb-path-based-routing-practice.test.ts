@@ -1,13 +1,13 @@
 // import * as cdk from 'aws-cdk-lib';
 // import { Template } from 'aws-cdk-lib/assertions';
-// import * as AlbPassBasedRoutingPractice from '../lib/alb-pass-based-routing-practice-stack';
+// import * as AlbPathBasedRoutingPractice from '../lib/alb-path-based-routing-practice-stack';
 
 // example test. To run these tests, uncomment this file along with the
-// example resource in lib/alb-pass-based-routing-practice-stack.ts
+// example resource in lib/alb-path-based-routing-practice-stack.ts
 test('SQS Queue Created', () => {
 //   const app = new cdk.App();
 //     // WHEN
-//   const stack = new AlbPassBasedRoutingPractice.AlbPassBasedRoutingPracticeStack(app, 'MyTestStack');
+//   const stack = new AlbPathBasedRoutingPractice.AlbPathBasedRoutingPracticeStack(app, 'MyTestStack');
 //     // THEN
 //   const template = Template.fromStack(stack);
 

@@ -1,4 +1,4 @@
-# alb-pass-based-routing-practice
+# alb-path-based-routing-practice
 
 ## OverView
 ALBに来たリクエストをパスベースで別々のインスタンスへルーティングする構成(習作)

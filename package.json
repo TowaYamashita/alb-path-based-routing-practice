@@ -1,8 +1,8 @@
 {
-  "name": "alb-pass-based-routing-practice",
+  "name": "alb-path-based-routing-practice",
   "version": "0.1.0",
   "bin": {
-    "alb-pass-based-routing-practice": "bin/alb-pass-based-routing-practice.js"
+    "alb-path-based-routing-practice": "bin/alb-path-based-routing-practice.js"
   },
   "scripts": {
     "build": "tsc",

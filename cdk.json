@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/alb-pass-based-routing-practice.ts",
+  "app": "npx ts-node --prefer-ts-exts bin/alb-path-based-routing-practice.ts",
   "watch": {
     "include": [
       "**"
