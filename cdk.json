@@ -61,11 +61,9 @@
     "@aws-cdk/aws-rds:preventRenderingDeprecatedCredentials": true,
     "@aws-cdk/aws-codepipeline-actions:useNewDefaultBranchForCodeCommitSource": true,
     "dev": {
-      "amiId": "ami-081b9f3fb29eed16e",
       "healthCheckPath": "/healthcheck.html"
     },
     "prod": {
-      "amiId": "ami-",
       "healthCheckPath": ""
     }
   }

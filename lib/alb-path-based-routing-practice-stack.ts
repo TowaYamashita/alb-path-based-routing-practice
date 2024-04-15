@@ -1,15 +1,12 @@
-import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Duration, Fn, Stack, StackProps } from 'aws-cdk-lib';
 import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
-import { InstanceClass, InstanceSize, InstanceType, MachineImage, SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { Alarm, ComparisonOperator, Metric } from 'aws-cdk-lib/aws-cloudwatch';
+import { InstanceClass, InstanceSize, InstanceType, MachineImage, SubnetType, UserData, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { ApplicationLoadBalancer, ListenerCondition } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
+import { readFileSync } from 'fs';
 
 interface StagingProps {
-  /**
-   * EC2インスタンスを立ち上げる際に使用するゴールデンイメージ
-   * @see [healthCheckPath] にアクセスしたら200を返すよう設定したAMIを使用してください
-   */
-  amiId: string;
   /**
    * ロードバランサからEC2インスタンスへヘルスチェックを行うときのアクセス先のパス
    */
@@ -34,15 +31,11 @@ export class AlbPathBasedRoutingPracticeStack extends Stack {
         {
           cidrMask: 24,
           name: 'application',
-          subnetType: SubnetType.PRIVATE_ISOLATED,
+          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
         },
       ],
     });
 
-    const amiMap = {
-      // /healthcheck.html にアクセスしたら200を返すよう設定したAMIを作成して指定してください。
-      'us-east-1': context.amiId
-    };
     const healthCheckPath = context.healthCheckPath;
     const alb = new ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc,
@@ -68,6 +61,13 @@ export class AlbPathBasedRoutingPracticeStack extends Stack {
       },
     ];
 
+    const userData = UserData.forLinux({
+      // assets/install.shでシェバンを書いているため、2重にならないようこちらを無効化する
+      shebang: '',
+    });
+    const userDataScript = readFileSync('assets/install.sh', 'utf-8').toString();
+    userData.addCommands(userDataScript);
+
     for (let index = 0; index < services.length; index++) {
       const service = services[index];
       const target = new AutoScalingGroup(this, `${service.category}InstanceGroup`, {
@@ -76,11 +76,13 @@ export class AlbPathBasedRoutingPracticeStack extends Stack {
         minCapacity: 1,
         maxCapacity: 1,
         instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-        machineImage: MachineImage.genericLinux(amiMap),
+        machineImage: MachineImage.latestAmazonLinux2(),
+        userData: userData,
+        ssmSessionPermissions: true,
       });
 
       if (service.path != null) {
-        listener.addTargets(`${service.category}InstanceTarget`, {
+        const tg = listener.addTargets(`${service.category}InstanceTarget`, {
           targetGroupName: `tg-${service.category.toLowerCase()}`,
           port: 80,
           targets: [target],
@@ -94,14 +96,52 @@ export class AlbPathBasedRoutingPracticeStack extends Stack {
             path: healthCheckPath,
           },
         });
+        const tgArn = tg.targetGroupArn.split(':');
+        const lbArn = tg.loadBalancerArns.split(':');
+        const alarm = new Alarm(this, `${service.category}RequestCountAlarm`, {
+          metric: new Metric({
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'RequestCount',
+            dimensionsMap: {
+              'TargetGroup': Fn.select(tgArn.length - 1, tgArn),
+              'LoadBalancer': Fn.select(lbArn.length - 1, lbArn).replace('loadbalancer/', ''),
+            },
+            statistic: 'Sum',
+            // period: Duration.minutes(5),
+            period: Duration.minutes(1),
+          }),
+          // threshold: 1000,
+          threshold: 10,
+          evaluationPeriods: 1,
+          comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+        });
       } else {
-        listener.addTargets(`${service.category}InstanceTarget`, {
+        const tg = listener.addTargets(`${service.category}InstanceTarget`, {
           targetGroupName: `tg-${service.category.toLowerCase()}`,
           port: 80,
           targets: [target],
           healthCheck: {
             path: healthCheckPath,
           },
+        });
+        const tgArn = tg.targetGroupArn.split(':');
+        const lbArn = tg.loadBalancerArns.split(':');
+        const alarm = new Alarm(this, `${service.category}RequestCountAlarm`, {
+          metric: new Metric({
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'RequestCount',
+            dimensionsMap: {
+              'TargetGroup': Fn.select(tgArn.length - 1, tgArn),
+              'LoadBalancer': Fn.select(lbArn.length - 1, lbArn).replace('loadbalancer/', ''),
+            },
+            statistic: 'Sum',
+            // period: Duration.minutes(5),
+            period: Duration.minutes(1),
+          }),
+          // threshold: 1000,
+          threshold: 10,
+          evaluationPeriods: 1,
+          comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
         });
       }
     }
