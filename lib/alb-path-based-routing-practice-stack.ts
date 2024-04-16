@@ -1,5 +1,5 @@
-import { CfnOutput, Duration, Fn, Stack, StackProps } from 'aws-cdk-lib';
-import { AutoScalingGroup } from 'aws-cdk-lib/aws-autoscaling';
+import { CfnOutput, Duration, Stack, StackProps } from 'aws-cdk-lib';
+import { AutoScalingGroup, GroupMetrics } from 'aws-cdk-lib/aws-autoscaling';
 import { Alarm, ComparisonOperator, Metric } from 'aws-cdk-lib/aws-cloudwatch';
 import { InstanceClass, InstanceSize, InstanceType, MachineImage, SubnetType, UserData, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { ApplicationLoadBalancer, ListenerCondition } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -74,11 +74,14 @@ export class AlbPathBasedRoutingPracticeStack extends Stack {
         vpc,
         autoScalingGroupName: `asg-${service.category.toLowerCase()}`,
         minCapacity: 1,
-        maxCapacity: 1,
+        maxCapacity: 4,
         instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
         machineImage: MachineImage.latestAmazonLinux2(),
         userData: userData,
         ssmSessionPermissions: true,
+        groupMetrics: [
+          GroupMetrics.all(),
+        ]
       });
 
       if (service.path != null) {
@@ -96,21 +99,18 @@ export class AlbPathBasedRoutingPracticeStack extends Stack {
             path: healthCheckPath,
           },
         });
-        const tgArn = tg.targetGroupArn.split(':');
-        const lbArn = tg.loadBalancerArns.split(':');
         const alarm = new Alarm(this, `${service.category}RequestCountAlarm`, {
+          alarmName: `${service.category.toLowerCase()}-request-count-alarm`,
           metric: new Metric({
             namespace: 'AWS/ApplicationELB',
             metricName: 'RequestCount',
             dimensionsMap: {
-              'TargetGroup': Fn.select(tgArn.length - 1, tgArn),
-              'LoadBalancer': Fn.select(lbArn.length - 1, lbArn).replace('loadbalancer/', ''),
+              'TargetGroup': tg.targetGroupFullName,
+              'LoadBalancer': alb.loadBalancerFullName,
             },
             statistic: 'Sum',
-            // period: Duration.minutes(5),
             period: Duration.minutes(1),
           }),
-          // threshold: 1000,
           threshold: 10,
           evaluationPeriods: 1,
           comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
@@ -124,21 +124,18 @@ export class AlbPathBasedRoutingPracticeStack extends Stack {
             path: healthCheckPath,
           },
         });
-        const tgArn = tg.targetGroupArn.split(':');
-        const lbArn = tg.loadBalancerArns.split(':');
         const alarm = new Alarm(this, `${service.category}RequestCountAlarm`, {
+          alarmName: `${service.category.toLowerCase()}-request-count-alarm`,
           metric: new Metric({
             namespace: 'AWS/ApplicationELB',
             metricName: 'RequestCount',
             dimensionsMap: {
-              'TargetGroup': Fn.select(tgArn.length - 1, tgArn),
-              'LoadBalancer': Fn.select(lbArn.length - 1, lbArn).replace('loadbalancer/', ''),
+              'TargetGroup': tg.targetGroupFullName,
+              'LoadBalancer': alb.loadBalancerFullName,
             },
             statistic: 'Sum',
-            // period: Duration.minutes(5),
             period: Duration.minutes(1),
           }),
-          // threshold: 1000,
           threshold: 10,
           evaluationPeriods: 1,
           comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,

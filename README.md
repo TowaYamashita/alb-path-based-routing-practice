@@ -28,6 +28,13 @@ npm run cdk bootstrap -- --profile <プロファイル名> -c stage=<dev | prod>
 npm run cdk deploy -- --profile <プロファイル名> -c stage=<dev | prod>
 ```
 
+- AWSマネジメントコンソールで AutoScalingグループ 一覧画面を開いて、以下のパラメータを設定してリクエスト数によってオートスケーリングさせる設定にする
+  - ポリシータイプ: シンプルなスケーリング
+  - スケーリングポリシー: <適当な文字列>
+  - CloudWatchアラーム: <others|products|customers>-request-count-alarm
+  - アクションを追加する
+    - 追加 <適当な数値> 容量ユニット
+
 下記コマンドを実行して、アプリケーションスタックを削除する
 ```shell
 npm run cdk destroy -- --profile <プロファイル名> -c stage=<dev | prod>
